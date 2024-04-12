@@ -39,15 +39,6 @@ class Injection {
     fun provideRocketRemoteDatasource(shoppingService: ShoppingService) =
         ShoppingRemoteDatasource(shoppingService)
 
-//    @Singleton
-//    @Provides
-//    fun provideDatabase(@ApplicationContext applicationContext: Context) =
-//        AppDatabase.getDatabase(applicationContext)
-//
-//    @Singleton
-//    @Provides
-//    fun provideRocketDAO(appDatabase: AppDatabase) = appDatabase.shoppingDAO()
-
     @Singleton
     @Provides
     fun provideRepository(remoteDatasource: ShoppingService): Repository = RepositoryImpl(remoteDatasource)

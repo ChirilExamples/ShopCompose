@@ -1,7 +1,8 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.shopcompose
+package com.example.shopcompose.presentation
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -36,19 +37,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shopcompose.data.data_structure.ClothesItem
-import com.example.shopcompose.destinations.DetailsScreenDestination
-import com.example.shopcompose.destinations.MainScreenDestination
-import com.example.shopcompose.destinations.PurchasePageDestination
-import com.example.shopcompose.domain.ShoppingListViewModel
-import com.example.shopcompose.ui.AppsTopAppBar
-import com.example.shopcompose.ui.theme.ShopComposeTheme
-import com.example.shopcompose.utils.Resource
+import com.example.shopcompose.domain.utils.Resource
+import com.example.shopcompose.presentation.destinations.DetailsScreenDestination
+import com.example.shopcompose.presentation.destinations.MainScreenDestination
+import com.example.shopcompose.presentation.destinations.PurchasePageDestination
+import com.example.shopcompose.presentation.theme.ShopComposeTheme
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.skydoves.landscapist.glide.GlideImage
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -101,20 +101,16 @@ fun MainScreen(
     )
 }
 
-//@Preview(showBackground = true)
+// @Preview(showBackground = true)
 @Composable
-fun CategoryChip(list: List<ClothesItem>) {
+fun CategoryChip(
+    list: List<ClothesItem>, viewModel: ShoppingListViewModel, listState: LazyListState
+) {
 
-    val listPrice = listOf<Int>(
-        5,
-        10,
-        25,
-        50,
-        100,
-        150,
-        200,
-        250,
-        300,
+    val coroutineScope = rememberCoroutineScope()
+
+    val listPrice = listOf(
+        99999999, 25, 50, 100, 150, 200, 250, 300, 350, 400
     )
 
     val displayList = mutableListOf<String>()
@@ -123,9 +119,17 @@ fun CategoryChip(list: List<ClothesItem>) {
             char.uppercase()
         })
     }
+    displayList.add(0, "All")
     val displayList1 = displayList.toSet().toList()
 
-    Column() {
+    fun screenScrollUpdate() {
+        coroutineScope.launch {
+            listState.animateScrollToItem(1)
+            listState.animateScrollToItem(0)
+        }
+    }
+
+    Column {
         Text(text = "Sort by:", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "Price:", textAlign = TextAlign.Center)
@@ -135,13 +139,27 @@ fun CategoryChip(list: List<ClothesItem>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items(listPrice) {
-                    Card(modifier = Modifier.padding(horizontal = 8.dp),
-                        onClick = { /**/ }
-                    ) {
-                        Text(
-                            text = "Under $${it}",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    Card(modifier = Modifier.padding(horizontal = 8.dp), onClick = {
+                        viewModel.updatePrice(it)
+                        viewModel.priceState
+                        viewModel.updateCat("All")
+                        screenScrollUpdate()
+                        Log.i(
+                            "DebuggingCategoryChipsPrice", viewModel.priceState.value.toString()
                         )
+                    }) {
+                        if (it == 99999999) {
+
+                            Text(
+                                text = "All",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Under $${it}",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -154,9 +172,13 @@ fun CategoryChip(list: List<ClothesItem>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items(displayList1) {
-                    Card(modifier = Modifier.padding(horizontal = 4.dp),
-                        onClick = { /**/ }
-                    ) {
+                    Card(modifier = Modifier.padding(horizontal = 4.dp), onClick = {
+                        viewModel.updateCat(it)
+                        viewModel.catState
+                        viewModel.updatePrice(999999)
+                        screenScrollUpdate()
+                        Log.i("DebuggingCategoryChipsCat", viewModel.catState.toString())
+                    }) {
                         Text(
                             text = it,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -169,6 +191,7 @@ fun CategoryChip(list: List<ClothesItem>) {
 }
 
 
+@SuppressLint("StateFlowValueCalledInComposition")
 @Composable
 fun LazyColumnMain(
     viewModel: ShoppingListViewModel = viewModel(LocalContext.current as ComponentActivity),
@@ -178,129 +201,227 @@ fun LazyColumnMain(
 ) {
     val state by viewModel.itemsList.collectAsState()
     val list = state.data?.asReversed()
-
-
-    Log.i("DebugNetworkLazy", list.toString())
+    Log.i("DebugNetworkLazyState", list.toString())
 
     when (state) {
         is Resource.Success -> {
-
             list?.let {
                 Column(modifier = Modifier.padding(padding)) {
 
-                    CategoryChip(list)
+                    CategoryChip(list, viewModel, listState)
 
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxHeight(),
-                        state = listState
+                        modifier = Modifier.fillMaxHeight(), state = listState
                     ) {
                         items(list) {
-                            if (it.category == "women's clothing") {
-                                Card(modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 10.dp, vertical = 5.dp), onClick = {
-                                    navigator.navigate(
-                                        DetailsScreenDestination(
-                                            name = it.title,
-                                            image = it.image,
-                                            description = it.description,
-                                            price = it.price,
-                                            category = it.category
-                                        )
-                                    )
-                                }) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(150.dp)
-                                    ) {
-                                        GlideImage(
-                                            imageModel = it.image,
-                                            modifier = Modifier
-                                                .width(130.dp)
-                                                .padding(10.dp),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                        Column(modifier = Modifier) {
-                                            Text(
-                                                text = it.title,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(
-                                                    top = 10.dp,
-                                                    end = 10.dp
-                                                ),
-                                                maxLines = 2
-                                            )
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = "${it.rating.rate} /5",
-                                                    fontSize = 12.sp
-                                                )
-                                                Icon(
-                                                    imageVector = Icons.Filled.Star,
-                                                    contentDescription = "Stars",
-                                                    modifier = Modifier.size(12.dp)
-                                                )
-                                            }
-                                            Text(
-                                                text = it.description,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.padding(
-                                                    top = 4.dp,
-                                                    end = 10.dp
-                                                ),
-                                                fontSize = 14.sp,
-                                                lineHeight = 18.sp
-                                            )
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxHeight()
-                                                    .padding(bottom = 10.dp)
-                                            ) {
-                                                Box(
-                                                    contentAlignment = Alignment.BottomCenter,
-                                                    modifier = Modifier.fillMaxHeight()
-                                                ) {
-                                                    Text(
-                                                        text = it.category,
-                                                        textAlign = TextAlign.Justify,
-                                                        modifier = Modifier,
-                                                        fontWeight = FontWeight.Light
-                                                    )
-                                                }
-                                                Box(
-                                                    contentAlignment = Alignment.BottomCenter,
-                                                    modifier = Modifier.fillMaxHeight()
-                                                ) {
-                                                    Text(
-                                                        text = "$${it.price}",
-                                                        textAlign = TextAlign.Right,
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(end = 10.dp),
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            if (viewModel.catState.value == "All" && it.price < viewModel.priceState.value) {
+                                AllItems(it, navigator)
+                            } else if (it.category == viewModel.catState.value.replaceFirstChar { char ->
+                                    char.lowercase()
+                                } && it.price < viewModel.priceState.value) {
+                                SortedItems(navigator, it)
                             }
                         }
                     }
-                    Log.i("DebugNetworkInLet", list.toString())
                 }
             }
         }
+
         is Resource.Loading -> {
             ShowLoadingIndicator()
             Log.i("DebugNetworkMainLoading", "Loading")
         }
+
         is Resource.Error -> {
             Log.i("DebugNetworkMainError", "Error")
             state.message?.let { ShowErrorMessage(message = it) }
+            LaunchedEffect(key1 = "") {
+                delay(5000)
+                viewModel.getData()
+                Log.i("MainScreen", "reloading after error")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SortedItems(
+    navigator: DestinationsNavigator, it: ClothesItem
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        onClick = {
+            navigator.navigate(
+                DetailsScreenDestination(
+                    name = it.title,
+                    image = it.image,
+                    description = it.description,
+                    price = it.price,
+                    category = it.category
+                )
+            )
+        }) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+        ) {
+            GlideImage(
+                imageModel = it.image,
+                modifier = Modifier
+                    .width(130.dp)
+                    .padding(10.dp),
+                contentScale = ContentScale.Fit
+            )
+            Column(modifier = Modifier) {
+                Text(
+                    text = it.title, fontWeight = FontWeight.Bold, modifier = Modifier.padding(
+                        top = 10.dp, end = 10.dp
+                    ), maxLines = 2
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${it.rating.rate} /5", fontSize = 12.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Stars",
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+                Text(
+                    text = it.description,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(
+                        top = 4.dp, end = 10.dp
+                    ),
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(bottom = 10.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.BottomCenter,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Text(
+                            text = it.category,
+                            textAlign = TextAlign.Justify,
+                            modifier = Modifier,
+                            fontWeight = FontWeight.Light
+                        )
+                    }
+                    Box(
+                        contentAlignment = Alignment.BottomCenter,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Text(
+                            text = "$${it.price}",
+                            textAlign = TextAlign.Right,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 10.dp),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AllItems(it: ClothesItem, navigator: DestinationsNavigator) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        onClick = {
+            navigator.navigate(
+                DetailsScreenDestination(
+                    name = it.title,
+                    image = it.image,
+                    description = it.description,
+                    price = it.price,
+                    category = it.category
+                )
+            )
+        }) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+        ) {
+            GlideImage(
+                imageModel = it.image,
+                modifier = Modifier
+                    .width(130.dp)
+                    .padding(10.dp),
+                contentScale = ContentScale.Fit
+            )
+            Column(modifier = Modifier) {
+                Text(
+                    text = it.title, fontWeight = FontWeight.Bold, modifier = Modifier.padding(
+                        top = 10.dp, end = 10.dp
+                    ), maxLines = 2
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${it.rating.rate} /5", fontSize = 12.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Stars",
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+                Text(
+                    text = it.description,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(
+                        top = 4.dp, end = 10.dp
+                    ),
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(bottom = 10.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.BottomCenter,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Text(
+                            text = it.category,
+                            textAlign = TextAlign.Justify,
+                            modifier = Modifier,
+                            fontWeight = FontWeight.Light
+                        )
+                    }
+                    Box(
+                        contentAlignment = Alignment.BottomCenter,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Text(
+                            text = "$${it.price}",
+                            textAlign = TextAlign.Right,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 10.dp),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -446,7 +567,7 @@ fun ShowErrorMessage(
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column {
             androidx.compose.material3.Text(
-                text = message,
+                text = "$message, it will reload soon",
                 style = MaterialTheme.typography.displayMedium,
                 textAlign = TextAlign.Center
             )

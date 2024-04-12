@@ -85,6 +85,9 @@ dependencies {
     // AndroidJUnitRunner and JUnit Rules
     androidTestImplementation 'com.android.support.test:rules:1.0.1'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    testImplementation 'androidx.arch.core:core-testing:2.1.0'
+    testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0'
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4"
 
     //MockK
     testImplementation "io.mockk:mockk:1.13.2"
@@ -131,6 +134,8 @@ dependencies {
     // To use Kotlin annotation processing tool (kapt)
     kapt "androidx.room:room-compiler:$room_version"
 
+    // compose livedata
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1"
 
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.3.1'

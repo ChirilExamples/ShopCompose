@@ -1,4 +1,4 @@
-package com.example.shopcompose.ui.theme
+package com.example.shopcompose.presentation.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle

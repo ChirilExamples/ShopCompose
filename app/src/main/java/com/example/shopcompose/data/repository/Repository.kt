@@ -1,7 +1,7 @@
 package com.example.shopcompose.data.repository
 
 import com.example.shopcompose.data.data_structure.ClothesItem
-import com.example.shopcompose.utils.Resource
+import com.example.shopcompose.domain.utils.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface Repository {

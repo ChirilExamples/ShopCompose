@@ -2,10 +2,9 @@ package com.example.shopcompose.domain
 
 import android.util.Log
 import com.example.shopcompose.data.data_structure.ClothesItem
-import com.example.shopcompose.data.local.ShoppingDAO
 import com.example.shopcompose.data.remote.ShoppingService
 import com.example.shopcompose.data.repository.Repository
-import com.example.shopcompose.utils.Resource
+import com.example.shopcompose.domain.utils.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
@@ -36,12 +35,7 @@ class RepositoryImpl @Inject constructor(
         }
     }
 
-
-//    fun getShoppings() = remoteDatasource.getAllShoppings()
-
-//    suspend fun insertShoppings() = localDatasource.insertAll()
-
-
+//    Pointless for the current implementation
 //    fun getShoppingDetailsData(id: Int) = performGetOperation(
 //        databaseQuery = { localDatasource.getShopping(id) },
 //        networkCall = { remoteDatasource.getShoppingsDetails(id) },

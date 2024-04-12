@@ -1,4 +1,4 @@
-package com.example.shopcompose
+package com.example.shopcompose.presentation
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
