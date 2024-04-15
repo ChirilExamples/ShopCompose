@@ -61,4 +61,10 @@ class ShoppingListViewModelTest {
         assertTrue(viewModel.itemsList.value is Resource.Success)
         assertEquals(shoppingList, (viewModel.itemsList.value as Resource.Success).data)
     }
+
+    @Test
+    fun `get data should be in loading at the click instant`() = runBlocking {
+        viewModel.getData()
+        assertTrue(viewModel.itemsList.value is Resource.Loading)
+    }
 }
